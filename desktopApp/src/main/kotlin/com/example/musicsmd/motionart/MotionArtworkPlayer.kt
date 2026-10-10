@@ -1,5 +1,6 @@
 package com.example.musicsmd.motionart
 
+import com.example.musicsmd.playback.VlcLogging
 import java.io.IOException
 import java.nio.ByteBuffer
 import kotlin.math.roundToInt
@@ -155,6 +156,7 @@ internal class MotionArtworkPlayer private constructor(private val factory: Medi
     companion object {
         fun open(): MotionArtworkPlayer {
             val factory = MediaPlayerFactory(
+                *VlcLogging.args(),
                 "--no-audio",
                 "--no-sub-autodetect-file",
                 "--no-video-title-show",

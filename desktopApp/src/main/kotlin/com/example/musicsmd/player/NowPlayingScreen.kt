@@ -90,6 +90,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import com.example.musicsmd.ui.components.ArtworkImage
+import com.example.musicsmd.ui.components.ArtworkTransition
 import com.example.musicsmd.ui.components.LiquidGlassSheet
 import com.example.musicsmd.ui.components.LocalHazeState
 import com.example.musicsmd.ui.components.PlayPauseButton
@@ -170,20 +171,27 @@ fun NowPlayingScreen(
             Box(Modifier.matchParentSize().glassBackdrop(haze)) {
                 // Opaque base so the player is never see-through over the content behind it.
                 Box(Modifier.matchParentSize().background(AppBackground))
-                if (!song.artworkUrl.isNullOrEmpty()) {
-                    Box(Modifier.matchParentSize().clipToBounds()) {
+                ArtworkTransition(
+                    url = song.artworkUrl?.takeIf { it.isNotEmpty() },
+                    modifier = Modifier.matchParentSize().clipToBounds(),
+                ) { artworkUrl, onReady ->
+                    if (artworkUrl != null) {
                         AsyncImage(
-                            model = song.artworkUrl,
+                            model = artworkUrl,
                             contentDescription = null,
                             contentScale = ContentScale.Crop,
+                            onSuccess = { onReady() },
+                            onError = { onReady() },
                             modifier = Modifier
-                                .matchParentSize()
+                                .fillMaxSize()
                                 .graphicsLayer {
                                     scaleX = BACKDROP_SCALE
                                     scaleY = BACKDROP_SCALE
                                 }
                                 .blur(60.dp),
                         )
+                    } else {
+                        LaunchedEffect(Unit) { onReady() }
                     }
                 }
                 if (motionArt != null && motionArtStyle == MotionArtStyle.FULL_SCREEN) {
@@ -390,7 +398,7 @@ private fun PlayerColumn(
                         .shadow(elevation = 24.dp, shape = artShape)
                         .clip(artShape),
                 ) {
-                    ArtworkImage(url = song.artworkUrl, size = artSize, shape = artShape)
+                    ArtworkImage(url = song.artworkUrl, size = artSize, shape = artShape, animateChanges = true)
                     coverArt?.let { art ->
                         MotionArtwork(
                             url = art.videoUrl,

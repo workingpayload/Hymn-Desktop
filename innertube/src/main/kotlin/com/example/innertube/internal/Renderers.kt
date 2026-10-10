@@ -380,6 +380,44 @@ internal data class SectionListRenderer(
 @Serializable
 internal data class TabContent(
     val sectionListRenderer: SectionListRenderer? = null,
+    /** The watch page's "Up next" tab: the queue YouTube Music itself would play. */
+    val musicQueueRenderer: MusicQueueRenderer? = null,
+)
+
+@Serializable
+internal data class MusicQueueRenderer(
+    val content: MusicQueueContent? = null,
+)
+
+@Serializable
+internal data class MusicQueueContent(
+    val playlistPanelRenderer: PlaylistPanelRenderer? = null,
+)
+
+@Serializable
+internal data class PlaylistPanelRenderer(
+    val contents: List<PlaylistPanelItem> = emptyList(),
+)
+
+/** A queue entry; tracks with a music video are sometimes wrapped with their audio counterpart. */
+@Serializable
+internal data class PlaylistPanelItem(
+    val playlistPanelVideoRenderer: PlaylistPanelVideoRenderer? = null,
+    val playlistPanelVideoWrapperRenderer: PlaylistPanelVideoWrapperRenderer? = null,
+) {
+    val video: PlaylistPanelVideoRenderer?
+        get() = playlistPanelVideoRenderer
+            ?: playlistPanelVideoWrapperRenderer?.primaryRenderer?.playlistPanelVideoRenderer
+}
+
+@Serializable
+internal data class PlaylistPanelVideoWrapperRenderer(
+    val primaryRenderer: PlaylistPanelPrimaryRenderer? = null,
+)
+
+@Serializable
+internal data class PlaylistPanelPrimaryRenderer(
+    val playlistPanelVideoRenderer: PlaylistPanelVideoRenderer? = null,
 )
 
 @Serializable
@@ -459,6 +497,11 @@ internal data class InnerTubeResponse(
 internal data class PlaylistPanelVideoRenderer(
     val title: Runs? = null,
     val videoId: String? = null,
+    /** "Artist • Album • Year" for a track, "Artist • 1B views • 5M likes" for a video. */
+    val longBylineText: Runs? = null,
+    val lengthText: Runs? = null,
+    val thumbnail: Thumbnails? = null,
+    val badges: List<Badge> = emptyList(),
 )
 
 @Serializable

@@ -508,7 +508,7 @@ fun App(
                                             isLiked = ::isLiked,
                                             onQueryChange = viewModel::onQueryChange,
                                             onSearch = viewModel::search,
-                                            onSongClick = ::playSong,
+                                            onSongClick = { song, _ -> viewModel.playFromSearch(song) },
                                             onToggleLike = viewModel::toggleLike,
                                             onAlbumClick = { viewModel.navigateTo(Screen.AlbumDetail(it.id)) },
                                             onArtistClick = { viewModel.navigateTo(Screen.ArtistDetail(it.id)) },

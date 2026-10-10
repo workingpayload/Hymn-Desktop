@@ -241,6 +241,23 @@ class ParsersTest {
     }
 
     @Test
+    fun `reads the up next queue, wrapped entries included`() {
+        val songs = Parsers.upNext(json.decodeFromString<NextResponse>(UP_NEXT))
+
+        assertEquals(listOf("seedVideo01", "nextTrack01", "wrapped0001"), songs.map { it.id })
+        val video = songs[1]
+        assertEquals("Con Calma (feat. Snow)", video.title)
+        assertEquals(listOf("Daddy Yankee"), video.artists.map { it.name })
+        assertEquals(211_000L, video.durationMs)
+        assertEquals("https://i.example/big.jpg", video.thumbnailUrl)
+        val track = songs[2]
+        assertEquals(listOf("Neon Fields"), track.artists.map { it.name })
+        assertEquals("Night Drive", track.album?.title)
+        assertTrue(track.explicit)
+        assertTrue(Parsers.upNext(json.decodeFromString<NextResponse>(NEXT)).isEmpty())
+    }
+
+    @Test
     fun `reads shelves hung directly off contents`() {
         val page = Parsers.page(Parsers.directSections(parse(RELATED)))
         assertEquals(listOf("You might also like"), page.shelves.map { it.title })
@@ -637,6 +654,42 @@ private const val NEXT = """
     {"tabRenderer": {"title": "Up next", "content": {}}},
     {"tabRenderer": {"title": "Lyrics",
       "endpoint": {"browseEndpoint": {"browseId": "MPLYfixture"}}}},
+    {"tabRenderer": {"title": "Related",
+      "endpoint": {"browseEndpoint": {"browseId": "MPTRfixture"}}}}
+  ]}}}}}
+"""
+
+private const val ARTIST_RUN =
+    """{"text": "Neon Fields", "navigationEndpoint": {"browseEndpoint": {"browseId": "UCfixtureArtist",
+      "browseEndpointContextSupportedConfigs": {"browseEndpointContextMusicConfig": {
+        "pageType": "MUSIC_PAGE_TYPE_ARTIST"}}}}}"""
+
+private const val UP_NEXT = """
+{"contents": {"singleColumnMusicWatchNextResultsRenderer": {"tabbedRenderer": {
+  "watchNextTabbedResultsRenderer": {"tabs": [
+    {"tabRenderer": {"title": "Up next", "content": {"musicQueueRenderer": {"content": {
+      "playlistPanelRenderer": {"contents": [
+        {"playlistPanelVideoRenderer": {"videoId": "seedVideo01",
+          "title": {"runs": [{"text": "Despacito"}]},
+          "longBylineText": {"runs": [{"text": "Luis Fonsi"}]},
+          "lengthText": {"runs": [{"text": "4:42"}]}}},
+        {"playlistPanelVideoRenderer": {"videoId": "nextTrack01",
+          "title": {"runs": [{"text": "Con Calma (feat. Snow)"}]},
+          "longBylineText": {"runs": [{"text": "Daddy Yankee"}, {"text": " \u2022 "},
+            {"text": "3.2B views"}, {"text": " \u2022 "}, {"text": "15M likes"}]},
+          "lengthText": {"runs": [{"text": "3:31"}]},
+          "thumbnail": {$THUMBS}}},
+        {"playlistPanelVideoWrapperRenderer": {"primaryRenderer": {"playlistPanelVideoRenderer": {
+          "videoId": "wrapped0001",
+          "title": {"runs": [{"text": "Afterglow"}]},
+          "longBylineText": {"runs": [$ARTIST_RUN, {"text": " \u2022 "},
+            {"text": "Night Drive", "navigationEndpoint": {"browseEndpoint": {"browseId": "MPREb_fixture01",
+              "browseEndpointContextSupportedConfigs": {"browseEndpointContextMusicConfig": {
+                "pageType": "MUSIC_PAGE_TYPE_ALBUM"}}}}},
+            {"text": " \u2022 "}, {"text": "2021"}]},
+          "badges": [{"musicInlineBadgeRenderer": {"icon": {"iconType": "MUSIC_EXPLICIT_BADGE"}}}]}}}},
+        {"automixPreviewVideoRenderer": {}}
+      ]}}}}}},
     {"tabRenderer": {"title": "Related",
       "endpoint": {"browseEndpoint": {"browseId": "MPTRfixture"}}}}
   ]}}}}}

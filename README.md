@@ -53,8 +53,10 @@ Feature parity with the mobile app, minus Android-only pieces (see bottom of lis
   scrubber, controls card around the hue-tinted frosted `PlayPauseButton`, glassy volume track,
   lyrics / output / queue row). Shuffle, repeat off/all/one, speed, sleep timer with fade-out,
   equalizer; the output picker and sleep timer open as mobile's Liquid Glass sheet. Autoplay radio
-  continues with related tracks when the queue ends; the queue (paused) and volume are restored on
-  launch. As on mobile, the next track's stream URL is looked up ahead of time, so skipping starts
+  continues with YouTube Music's own mix for the track (same genre, neighbouring artists) when the
+  queue ends, skipping remixes, covers and other takes on songs already queued. A song played from
+  search is followed by its radio rather than by the other results. The queue (paused) and volume
+  are restored on launch. As on mobile, the next track's stream URL is looked up ahead of time, so skipping starts
   almost at once. Switching to a song that wasn't looked up ahead keeps the current one playing
   (the play button shows a spinner) until the new stream is ready, so there's no silent gap; a
   restored queue resumes directly at its saved position. libVLC reopens its audio stream for
@@ -74,10 +76,15 @@ Feature parity with the mobile app, minus Android-only pieces (see bottom of lis
   stays attached, flat if yours is off, while either is on. Snippets are decoded by libVLC's
   stream output to a temporary WAV file, faster than real time. Repeat-one, the sleep timer's
   "end of track", and autoplay radio's next fetch don't blend; skipping, seeking or pausing during
-  a blend ends it at once. Set `MUSICSM_MIX_DEBUG=1` to log each plan.
+  a blend ends it at once. Set `MUSICSM_MIX_DEBUG=1` to log each plan. libVLC's own console
+  messages (e.g. routine HTTP/2 "Stream closed" errors) are silenced; set `MUSICSM_VLC_DEBUG=1`
+  to show them.
 - **Motion**: mobile's transitions — Now Playing slides up from the mini player on a spring (the
   pill fades under it), pushed pages slide in from the right and back out the other way, dock tabs
   cross-fade, and the queue panel slides in. Going back keeps a page's scroll position and filters.
+  Song changes cross-fade the mini-player cover, Now Playing cover, and blurred artwork backdrop:
+  the old cover stays until the new one has loaded (up to 5 s), then the new one fades in over
+  600 ms while settling from a slight zoom. Tracks sharing the same artwork keep the cover steady.
   The seek bar and word-synced lyrics are interpolated per frame between libVLC's position ticks
   (`SmoothPosition.kt`), and playback position lives in its own flow, so the rest of the app doesn't
   recompose several times a second while music plays; only the lyric line being sung reads it.

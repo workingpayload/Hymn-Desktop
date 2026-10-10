@@ -9,6 +9,7 @@ import androidx.compose.material.icons.filled.MusicNote
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -19,7 +20,13 @@ import com.example.musicsmd.ui.theme.SurfaceHigh
 
 /** Song/album/artist/playlist cover art, with a placeholder icon when [url] is null or fails. */
 @Composable
-fun ArtworkImage(url: String?, size: Dp, modifier: Modifier = Modifier, shape: RoundedCornerShape = RoundedCornerShape(8.dp)) {
+fun ArtworkImage(
+    url: String?,
+    size: Dp,
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(8.dp),
+    animateChanges: Boolean = false,
+) {
     Box(
         modifier = modifier
             .size(size)
@@ -27,9 +34,29 @@ fun ArtworkImage(url: String?, size: Dp, modifier: Modifier = Modifier, shape: R
             .background(SurfaceHigh),
         contentAlignment = Alignment.Center,
     ) {
-        if (url != null) {
-            AsyncImage(model = url, contentDescription = null, modifier = Modifier.size(size))
+        if (animateChanges) {
+            ArtworkTransition(url = url, modifier = Modifier.size(size)) { artworkUrl, onReady ->
+                ArtworkContent(artworkUrl, size, onReady)
+            }
         } else {
+            ArtworkContent(url, size)
+        }
+    }
+}
+
+@Composable
+private fun ArtworkContent(url: String?, size: Dp, onReady: () -> Unit = {}) {
+    Box(Modifier.size(size), contentAlignment = Alignment.Center) {
+        if (url != null) {
+            AsyncImage(
+                model = url,
+                contentDescription = null,
+                modifier = Modifier.size(size),
+                onSuccess = { onReady() },
+                onError = { onReady() },
+            )
+        } else {
+            LaunchedEffect(Unit) { onReady() }
             Icon(
                 Icons.Filled.MusicNote,
                 contentDescription = null,

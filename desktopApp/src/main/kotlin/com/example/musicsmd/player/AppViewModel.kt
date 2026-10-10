@@ -10,6 +10,7 @@ import com.example.musicsm.domain.model.HomeItem
 import com.example.musicsm.domain.model.Playlist
 import com.example.musicsm.domain.model.SearchResults
 import com.example.musicsm.domain.model.Song
+import com.example.musicsm.domain.recommend.SongVariants
 import com.example.musicsm.domain.repository.LibraryRepository
 import com.example.musicsm.domain.repository.MusicRepository
 import com.example.musicsm.domain.repository.StatsRepository
@@ -761,12 +762,22 @@ class AppViewModel(
         s.copy(queue = queue)
     }
 
+    /**
+     * A song picked from search. The other results are mostly the same title again (covers,
+     * remixes, lyric videos), so they don't become the queue: the song plays followed by its radio,
+     * or on its own with autoplay radio turned off.
+     */
+    fun playFromSearch(song: Song) {
+        if (settingsStore.current.autoplayRadio) startRadio(song) else play(song)
+    }
+
     /** Plays [song] followed by YouTube Music's related tracks ("Start radio"). */
     fun startRadio(song: Song) = scope.launch {
         startSong(song, listOf(song), 0)
-        val related = runCatching { musicSource.relatedTo(song.id) }.getOrDefault(emptyList())
-            .filter { it.id != song.id }
-            .distinctBy { it.id }
+        val related = SongVariants.freshSongs(
+            runCatching { musicSource.relatedTo(song.id) }.getOrDefault(emptyList()),
+            heard = listOf(song),
+        )
         originalQueue = listOf(song) + related
         _playback.update { s -> if (s.currentSong?.id == song.id) s.copy(queue = s.queue + related) else s }
     }
@@ -961,10 +972,12 @@ class AppViewModel(
     }
 
     private suspend fun autoplayRadioAfter(lastSong: Song, state: PlaybackUiState) {
-        val queuedIds = state.queue.map { it.id }.toSet()
-        val related = runCatching { musicSource.relatedTo(lastSong.id) }.getOrDefault(emptyList())
-            .filter { it.id !in queuedIds && !it.id.startsWith(LOCAL_ID_PREFIX) }
-            .distinctBy { it.id }
+        // Whatever was already queued, the searched song included, isn't wanted again in another take.
+        val related = SongVariants.freshSongs(
+            runCatching { musicSource.relatedTo(lastSong.id) }.getOrDefault(emptyList())
+                .filter { !it.id.startsWith(LOCAL_ID_PREFIX) },
+            heard = state.queue,
+        )
         if (related.isEmpty()) {
             finishCurrentSong()
             stopAtEnd()

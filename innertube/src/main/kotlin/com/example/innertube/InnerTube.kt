@@ -199,8 +199,31 @@ class InnerTube(
         return Parsers.page(Parsers.directSections(browse(browseId)))
     }
 
-    /** Related songs only — the common case when seeding recommendations from a played track. */
-    suspend fun relatedSongs(videoId: String): List<YtSong> = related(videoId).songs
+    /**
+     * Related songs only — the common case when seeding recommendations from a played track.
+     *
+     * Shelves of other recordings of this same song (covers, live takes) are left out: they are
+     * "related" by title alone, which is never what a listener wants to hear next.
+     */
+    suspend fun relatedSongs(videoId: String): List<YtSong> =
+        related(videoId).shelves
+            .filterNot { shelf -> VERSION_SHELF_HINTS.any { shelf.title.contains(it, ignoreCase = true) } }
+            .flatMap { it.items }
+            .filterIsInstance<YtItem.Song>()
+            .map { it.song }
+
+    /**
+     * YouTube Music's radio for [videoId]: the automix queue its own player continues with once
+     * the track ends — the same genre and neighbouring artists, around 50 tracks. One round trip.
+     * The track itself leads the list, as it does in the player.
+     */
+    suspend fun radio(videoId: String): List<YtSong> {
+        val next = request<NextResponse>(
+            path = NEXT_PATH,
+            body = NextBody(context = context(), videoId = videoId, playlistId = AUTOMIX_PREFIX + videoId),
+        )
+        return Parsers.upNext(next)
+    }
 
     /**
      * The signed-in account's listening history, newest first, as YouTube Music groups it
@@ -283,6 +306,12 @@ class InnerTube(
         const val LIBRARY_PLAYLISTS_BROWSE_ID = "FEmusic_liked_playlists"
         const val EPISODES_FOR_LATER_ID = "SE"
         const val PLAYLIST_BROWSE_PREFIX = "VL"
+
+        /** A track's automix playlist id is this followed by its video id. */
+        const val AUTOMIX_PREFIX = "RDAMVM"
+
+        /** Related-page shelves that hold other recordings of the same song. */
+        val VERSION_SHELF_HINTS = listOf("other performances", "other versions")
     }
 }
 

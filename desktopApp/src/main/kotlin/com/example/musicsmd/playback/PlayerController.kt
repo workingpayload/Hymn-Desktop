@@ -60,16 +60,15 @@ class PlayerController {
         var tickNanos = 0L
     }
 
-    private val first = AudioPlayerComponent()
-    private val second = AudioPlayerComponent(first.mediaPlayerFactory())
+    /** The libVLC instance both decks share, for helpers such as snippet decoding. */
+    val factory: MediaPlayerFactory = MediaPlayerFactory(*VlcLogging.args())
+    private val first = AudioPlayerComponent(factory)
+    private val second = AudioPlayerComponent(factory)
     private val decks = listOf(Deck(first), Deck(second))
 
     @Volatile
     private var active = decks[0].apply { role = Role.ACTIVE }
     private val other: Deck get() = if (active === decks[0]) decks[1] else decks[0]
-
-    /** The libVLC instance both decks share, for helpers such as snippet decoding. */
-    val factory: MediaPlayerFactory get() = first.mediaPlayerFactory()
 
     var onEndReached: (() -> Unit)? = null
     var onError: (() -> Unit)? = null
@@ -378,6 +377,7 @@ class PlayerController {
     fun release() {
         second.release()
         first.release()
+        factory.release()
     }
 
     private class UserEqualizer(val preamp: Float, val bands: FloatArray)

@@ -9,6 +9,7 @@ import com.example.musicsm.domain.model.Playlist
 import com.example.musicsm.domain.model.SearchResults
 import com.example.musicsm.domain.model.Song
 import com.example.musicsm.domain.recommend.ShelfRanker
+import com.example.musicsm.domain.recommend.SongVariants
 import com.example.musicsm.domain.repository.MusicRepository
 import com.example.musicsm.domain.source.MusicSource
 import kotlinx.coroutines.Dispatchers
@@ -60,7 +61,6 @@ class MusicRepositoryImpl @Inject constructor(
     override suspend fun recommendations(seeds: List<Song>, limit: Int): List<Song> =
         withContext(Dispatchers.IO) {
             if (seeds.isEmpty()) return@withContext emptyList()
-            val seedIds = seeds.mapTo(HashSet()) { it.id }
             // Fan out to relatedTo for each seed in parallel, then merge round-robin so that each
             // seed contributes evenly and the same history always produces the same shelf.
             val perSeed = coroutineScope {
@@ -68,9 +68,10 @@ class MusicRepositoryImpl @Inject constructor(
                     async { runCatching { source.relatedTo(seed.id) }.getOrDefault(emptyList()) }
                 }.awaitAll()
             }
-            ShelfRanker.interleave(
-                perSeed.map { list -> list.filter { it.id !in seedIds } },
-                limit,
+            // Other takes on a seed (its remix, a cover) aren't a recommendation, nor is one song twice.
+            SongVariants.freshSongs(
+                ShelfRanker.interleave(perSeed.map { list -> SongVariants.freshSongs(list, seeds) }, limit),
+                heard = emptyList(),
             )
         }
 
@@ -88,10 +89,12 @@ class MusicRepositoryImpl @Inject constructor(
     override suspend fun radio(seed: Song, limit: Int, exclude: Set<String>): List<Song> =
         withContext(Dispatchers.IO) {
             val blocked = exclude + seed.id
-            val first = runCatching { source.relatedTo(seed.id) }
-                .getOrDefault(emptyList())
-                .filter { it.id !in blocked }
-                .distinctBy { it.id }
+            val first = SongVariants.freshSongs(
+                runCatching { source.relatedTo(seed.id) }
+                    .getOrDefault(emptyList())
+                    .filter { it.id !in blocked },
+                heard = listOf(seed),
+            )
             if (first.isEmpty()) return@withContext emptyList()
             if (first.size >= limit) return@withContext first.take(limit)
 
@@ -107,8 +110,9 @@ class MusicRepositoryImpl @Inject constructor(
                 }.awaitAll()
             }
 
-            // The seed's own results lead; the wider material is merged in behind them.
-            ShelfRanker.interleave(listOf(first) + branches, limit)
+            // The seed's own results lead; the wider material is merged in behind them, without
+            // coming back round to a song (or another take on it) already queued.
+            SongVariants.freshSongs(ShelfRanker.interleave(listOf(first) + branches, limit), heard = listOf(seed))
         }
 
     override suspend fun resolveStream(songId: String): PlayableStream = withContext(Dispatchers.IO) {

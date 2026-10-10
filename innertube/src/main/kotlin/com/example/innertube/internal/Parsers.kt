@@ -327,6 +327,36 @@ internal object Parsers {
     fun relatedBrowseId(response: NextResponse): String? =
         watchTabBrowseIds(response).firstOrNull { it.startsWith(RELATED_ID_PREFIX) }
 
+    /**
+     * The tracks of a watch page's "Up next" queue, in play order. Requested with an automix
+     * playlist this is YouTube Music's own radio for the track, the track itself first.
+     */
+    fun upNext(response: NextResponse): List<YtSong> =
+        response.contents?.singleColumnMusicWatchNextResultsRenderer?.tabbedRenderer
+            ?.watchNextTabbedResultsRenderer?.tabs
+            ?.firstNotNullOfOrNull { it.tabRenderer?.content?.musicQueueRenderer?.content?.playlistPanelRenderer }
+            ?.contents
+            .orEmpty()
+            .mapNotNull { it.video }
+            .mapNotNull(::queueSong)
+
+    private fun queueSong(video: PlaylistPanelVideoRenderer): YtSong? {
+        val videoId = video.videoId ?: return null
+        val title = video.title?.text?.takeIf { it.isNotBlank() } ?: return null
+        val byline = video.longBylineText?.runs.orEmpty()
+        return YtSong(
+            id = videoId,
+            title = title,
+            artists = artistRefs(byline),
+            album = albumRef(byline),
+            durationMs = parseDuration(video.lengthText?.text)
+                ?: byline.firstNotNullOfOrNull { parseDuration(it.text) }
+                ?: 0L,
+            thumbnailUrl = video.thumbnail.best(),
+            explicit = video.badges.any { it.musicInlineBadgeRenderer?.icon?.iconType == EXPLICIT_BADGE },
+        )
+    }
+
     /** A video's title, channel (as its artist) and length, from the player endpoint. */
     fun videoDetails(videoId: String, response: PlayerResponse): YtSong? {
         val details = response.videoDetails ?: return null
@@ -364,7 +394,7 @@ internal object Parsers {
     private const val SUBSCRIBER_HINT = "subscriber"
 
     /** Requests are sent with `hl=en`, so these labels come back in English. */
-    private val AUDIENCE_HINTS = listOf("view", "play")
+    private val AUDIENCE_HINTS = listOf("view", "play", "like")
 
     private val DATE = Regex(
         """(?i)(?:(?:jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)[a-z]*\.? \d{1,2}(?:, \d{4})?|\d+ (?:second|minute|hour|day|week|month|year)s? ago)""",

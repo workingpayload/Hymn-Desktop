@@ -21,6 +21,7 @@ import com.example.musicsm.domain.model.Playlist
 import com.example.musicsm.domain.model.SearchResults
 import com.example.musicsm.domain.model.Song
 import com.example.musicsm.domain.match.ArtistMatching
+import com.example.musicsm.domain.recommend.SongVariants
 import com.example.musicsm.domain.source.MusicSource
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.async
@@ -214,12 +215,22 @@ class YouTubeMusicSource @Inject constructor(
      *
      * This is the single biggest reason the module exists. NewPipe's related items come from the
      * video recommendation graph and drift into interviews, reaction videos and whatever else the
-     * algorithm is pushing; YouTube Music's related shelf is music, by artists that actually sit
-     * near this track.
+     * algorithm is pushing; YouTube Music's graph is music, by artists that actually sit near this
+     * track.
+     *
+     * The track's automix — what YouTube Music itself plays after it — comes first: it follows
+     * genre and neighbouring artists. The "Related" page is the fallback; it leans on the title, so
+     * its first shelf is often other uploads of this very song. Either way, other takes on the
+     * seed (remixes, covers, lyric videos) and repeats of one song are dropped.
      */
     override suspend fun relatedTo(songId: String): List<Song> {
-        val related = tryRemote { innerTube.relatedSongs(songId) }
-        return if (related.isNullOrEmpty()) newPipe.relatedTo(songId) else related.map { it.toSong() }
+        val radio = tryRemote { innerTube.radio(songId) }.orEmpty().map { it.toSong() }
+        val seed = radio.firstOrNull { it.id == songId }
+        val candidates = radio.filter { it.id != songId }.ifEmpty {
+            tryRemote { innerTube.relatedSongs(songId) }.orEmpty().map { it.toSong() }
+        }
+        if (candidates.isEmpty()) return newPipe.relatedTo(songId)
+        return SongVariants.freshSongs(candidates, heard = listOfNotNull(seed))
     }
 
     /** Metadata for a track; for an age-restricted video, from YouTube Music's player endpoint. */

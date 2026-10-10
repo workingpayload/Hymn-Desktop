@@ -76,7 +76,7 @@ fun PlayerBar(
                 .padding(start = 8.dp, end = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
-            ArtworkImage(url = song.artworkUrl, size = 44.dp, shape = CircleShape)
+            ArtworkImage(url = song.artworkUrl, size = 44.dp, shape = CircleShape, animateChanges = true)
             Spacer(Modifier.width(12.dp))
             Column(modifier = Modifier.weight(1f)) {
                 Text(
