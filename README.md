@@ -1,13 +1,13 @@
-# MusicSM Desktop
+# Hymn
 
-Desktop port of [MusicSM](../MusicSM) — a dark, Spotify-like music streaming app with metadata
+Desktop port of [Hymn](../MusicSM) — a dark, Spotify-like music streaming app with metadata
 from YouTube Music (InnerTube) and audio via NewPipeExtractor. Built with **Kotlin + Compose
 Multiplatform for Desktop** so the domain and data layers are shared verbatim with the mobile
 app; only the UI shell and playback engine are desktop-specific.
 
 ## Privacy
 
-See the [MusicSM Desktop Privacy Policy](PRIVACY-POLICY.md) for local data storage,
+See the [Hymn Privacy Policy](PRIVACY-POLICY.md) for local data storage,
 third-party service requests, and data deletion instructions.
 
 ## Status
@@ -146,6 +146,10 @@ Feature parity with the mobile app, minus Android-only pieces (see bottom of lis
   than the running version, a dialog shows the release notes and sends you to
   [music-sm.vercel.app](https://music-sm.vercel.app) to download it. "Later" skips that version.
   `run` never checks. `-Dmusicsmd.updateFeed=<url>` points the check at another feed (for testing).
+- **"MusicSM is now Hymn" intro**: the mobile app's one-time rename animation, ported. It plays once
+  for people updating from MusicSM (their data folder already had files); fresh installs never see it.
+  Click/Enter/Space skips, Esc closes, and the update and sign-in popups wait until it's gone.
+  `-Dmusicsmd.hymnIntro=always` plays it on every launch (for testing).
 - **Glass design** — the mobile app's `Glass.kt` ported as-is, with the same libraries and
   versions: the byte-identical dark "Stitch" palette; `GlassPanel` frosted panels via
   [Haze](https://github.com/chrisbanes/haze) 1.6.10; and **real Liquid Glass** (vibrancy, blur,
@@ -228,7 +232,7 @@ side hasn't been trimmed or tested on a Mac yet. Options:
 - `-PvlcDir=<dir>` — bundle a VLC from somewhere else (on macOS, `VLC.app/Contents/MacOS`).
 - `-PbundleVlc=false` — leave VLC out; the app then uses the VLC installed on the system.
 - `-PrequireVlc=true` — fail instead of warning when there is no VLC to bundle (used by CI).
-- `-PappVersion=1.2.3` — the version (default `1.1.1`), for the installer and the app itself
+- `-PappVersion=1.2.3` — the version (default `2.0.0`), for the installer and the app itself
   (Settings → About, and the update notice's comparison). It must be plain numbers, and the first
   one must be at least 1 for the DMG.
 
@@ -260,10 +264,10 @@ Release:
 
 ```powershell
 git branch -M main
-git remote add origin https://github.com/workingpayload/MusicSM-Desktop.git
+git remote add origin https://github.com/workingpayload/Hymn-Desktop.git
 git push -u origin main
-git tag v1.1.1
-git push origin v1.1.1
+git tag v2.0.0
+git push origin v2.0.0
 ```
 
 The tag sets the version (`v1.2.3` → 1.2.3; `v1.2.3-beta` → 1.2.3, published as a pre-release).
@@ -271,13 +275,13 @@ The tag sets the version (`v1.2.3` → 1.2.3; `v1.2.3-beta` → 1.2.3, published
 the run as artifacts). Installed copies notice a new (non-pre-release) Release on their own and
 point their users to the download page.
 
-The MusicSM download page (`web/` in the MusicSM repo) adds these installers' downloads to its
-GitHub total. It reads the public releases of `workingpayload/MusicSM-Desktop`, so keep the repo
-public under that name, or set `DESKTOP_GITHUB_REPO` on the Vercel project.
+The Hymn download page (`web/` in the MusicSM repo) adds these installers' downloads to its
+GitHub total. It reads the public releases of `workingpayload/Hymn-Desktop`, so keep the repo
+public under that name (the site's `DESKTOP_GITHUB_REPO` defaults to it).
 
 The installers aren't code-signed, so Windows SmartScreen shows "Windows protected your PC" (More
 info → Run anyway), and macOS blocks the first launch of the DMG (System Settings → Privacy &
-Security → Open Anyway, or `xattr -dr com.apple.quarantine "/Applications/MusicSM Desktop.app"`).
+Security → Open Anyway, or `xattr -dr com.apple.quarantine "/Applications/Hymn.app"`).
 On a Mac, `curl -fsSL https://music-sm.vercel.app/install.sh | bash` (offered on the download page)
 installs the newest release without that prompt. The app links
 NewPipeExtractor (GPLv3) and ships libVLC (LGPL), so releases should come with the source under

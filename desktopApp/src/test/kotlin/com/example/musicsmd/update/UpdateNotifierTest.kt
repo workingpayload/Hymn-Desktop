@@ -45,7 +45,7 @@ class UpdateNotifierTest {
 
     private fun release(tag: String, prerelease: Boolean = false) = """
         {"tag_name":"$tag","name":"$tag","draft":false,"prerelease":$prerelease,
-         "html_url":"https://github.com/workingpayload/MusicSM-Desktop/releases/tag/$tag",
+         "html_url":"https://github.com/workingpayload/Hymn-Desktop/releases/tag/$tag",
          "body":"  ## What's Changed\n* Faster search  ","assets":[{"name":"x.msi","size":1}]}
     """.trimIndent()
 
@@ -66,7 +66,7 @@ class UpdateNotifierTest {
     @Test
     fun `the build knows its own version`() {
         // Local and test builds get the default; releases get -PappVersion from the tag.
-        assertEquals("1.1.1", AppVersion.current)
+        assertEquals("2.0.0", AppVersion.current)
     }
 
     // ---- Reading GitHub -------------------------------------------------------------------------

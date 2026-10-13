@@ -120,6 +120,10 @@ import com.example.musicsmd.youtube.YouTubeAccountState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import com.example.musicsmd.desktop.WindowChrome
+import com.example.musicsmd.rename.HymnIntroOverlay
+import com.example.musicsmd.rename.HymnIntroState
+import com.example.musicsmd.rename.hasAppData
+import com.example.musicsmd.settings.AppPaths
 import com.example.musicsmd.ui.components.LocalDockInset
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
@@ -211,6 +215,7 @@ fun App(
     lyricsController: LyricsController,
     motionArtController: MotionArtController,
     windowActive: Boolean,
+    hymnIntro: HymnIntroState,
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val playback by viewModel.playback.collectAsState()
@@ -224,6 +229,7 @@ fun App(
     }
     val downloadedSongs by AppGraph.downloadManager.downloads().collectAsState(initial = emptyList())
     val newRelease by AppGraph.updateNotifier.available.collectAsState()
+    val showHymnIntro by hymnIntro.visible.collectAsState()
     val youTubeAccount by AppGraph.youTubeAccount.state.collectAsState()
     LaunchedEffect(youTubeAccount) {
         if (youTubeAccount == YouTubeAccountState.SignedIn) viewModel.onYouTubeSignedIn()
@@ -332,8 +338,9 @@ fun App(
         var warmingNowPlaying by remember { mutableStateOf(false) }
         // Last mouse or key activity; plain (not state), so recording it never recomposes anything.
         val lastInteractionNanos = remember { longArrayOf(System.nanoTime()) }
-        LaunchedEffect(hasSong, nowPlayingWarmed) {
-            if (!hasSong || nowPlayingWarmed) return@LaunchedEffect
+        LaunchedEffect(hasSong, nowPlayingWarmed, showHymnIntro) {
+            // The warm-up's stall would land mid-intro, so it waits until the intro is gone.
+            if (!hasSong || nowPlayingWarmed || showHymnIntro) return@LaunchedEffect
             delay(NOW_PLAYING_WARMUP_DELAY_MS)
             while (System.nanoTime() - lastInteractionNanos[0] < NOW_PLAYING_WARMUP_IDLE_NANOS) {
                 delay(NOW_PLAYING_WARMUP_POLL_MS)
@@ -746,7 +753,8 @@ fun App(
                     DietCokeDialog(onDismiss = { showDietCoke = false })
                 }
 
-                newRelease?.let { release ->
+                // Popups wait until the one-time "MusicSM is now Hymn" intro is gone.
+                newRelease?.takeIf { !showHymnIntro }?.let { release ->
                     val updates = AppGraph.updateNotifier
                     UpdateDialog(
                         release = release,
@@ -756,14 +764,14 @@ fun App(
                     )
                 }
 
-                if (uiState.youTubeSignInNeeded && youTubeAccount != YouTubeAccountState.SigningIn) {
+                if (uiState.youTubeSignInNeeded && youTubeAccount != YouTubeAccountState.SigningIn && !showHymnIntro) {
                     AlertDialog(
                         onDismissRequest = viewModel::dismissYouTubeSignInPrompt,
                         title = { Text("Sign in to keep playing") },
                         text = {
                             Text(
                                 "YouTube is asking this network to confirm it's not a bot, so it won't play songs " +
-                                    "anonymously right now. Sign in to YouTube and MusicSM plays them through your " +
+                                    "anonymously right now. Sign in to YouTube and Hymn plays them through your " +
                                     "account. A browser window opens for the sign-in.",
                             )
                         },
@@ -814,6 +822,11 @@ fun App(
                         nowPlaying(lyricsVisible, lyricsState)
                     }
                 }
+
+                // One-time "MusicSM is now Hymn" intro for people updating from MusicSM, over everything.
+                if (showHymnIntro) {
+                    HymnIntroOverlay(onFinished = hymnIntro::dismiss, modifier = Modifier.fillMaxSize())
+                }
             }
         }
     }
@@ -839,7 +852,10 @@ private fun tabOf(screen: Screen): Screen = when (screen) {
 }
 
 fun main() {
+    // Before anything this launch writes: only an existing MusicSM user's folder holds files.
+    val hadAppData = hasAppData(AppPaths.dataDir)
     AppGraph.init()
+    val hymnIntro = HymnIntroState(AppGraph.settingsStore, hadAppData)
     val viewModel = AppViewModel(
         musicSource = AppGraph.musicSource,
         streams = AppGraph.musicRepository,
@@ -906,7 +922,7 @@ fun main() {
             },
             visible = windowVisible,
             state = windowState,
-            title = "MusicSM Desktop",
+            title = "Hymn",
             icon = remember { AppIcon.painter(WINDOW_ICON_FALLBACK_SIZE) },
             onKeyEvent = { event ->
                 handleMusicShortcut(event, viewModel) {
@@ -928,7 +944,7 @@ fun main() {
             LaunchedEffect(Unit) {
                 AppIcon.windowImages.takeIf { it.isNotEmpty() }?.let { window.iconImages = it }
             }
-            App(viewModel, lyricsController, motionArtController, windowVisible && !windowState.isMinimized)
+            App(viewModel, lyricsController, motionArtController, windowVisible && !windowState.isMinimized, hymnIntro)
         }
     }
 }

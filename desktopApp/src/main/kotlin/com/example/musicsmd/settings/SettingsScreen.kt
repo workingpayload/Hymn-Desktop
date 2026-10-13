@@ -86,7 +86,7 @@ fun SettingsScreen(
     ) {
         item {
             Text("Settings", style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-            Text("Tune MusicSM Desktop", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("Tune Hymn", color = MaterialTheme.colorScheme.onSurfaceVariant)
         }
 
         item { SectionTitle("Appearance") }
@@ -313,7 +313,7 @@ fun SettingsScreen(
         item { SectionTitle("Desktop") }
         item {
             SettingsCard {
-                SettingsSwitch("Minimize to tray", "Keep MusicSM running when the window closes.", settings.minimizeToTray) {
+                SettingsSwitch("Minimize to tray", "Keep Hymn running when the window closes.", settings.minimizeToTray) {
                     onUpdate { it.copy(minimizeToTray = it.minimizeToTray.not()) }
                 }
                 SettingsSwitch("Global media keys", "Listen for play/pause/next/previous keys.", settings.mediaKeys) {
@@ -334,8 +334,8 @@ fun SettingsScreen(
         item { SectionTitle("About") }
         item {
             SettingsCard {
-                SettingsRow("MusicSM Desktop", "Version ${AppVersion.current}", onClick = null)
-                SettingsRow("Desktop port of MusicSM", "Kotlin + Compose Multiplatform, glass design, YouTube Music catalog.", onClick = null)
+                SettingsRow("Hymn", "Version ${AppVersion.current}", onClick = null)
+                SettingsRow("Desktop port of Hymn", "Kotlin + Compose Multiplatform, glass design, YouTube Music catalog.", onClick = null)
             }
         }
     }
@@ -376,9 +376,9 @@ private fun YouTubeAccountRow(
             "If YouTube blocks anonymous playback on your network, songs play through your account."
         YouTubeAccountState.SigningIn -> "Finish signing in in the browser window" to
             if (BrowserWindows.supported) {
-                "MusicSM opened Edge or Chrome with a separate, temporary profile. It closes by itself once YouTube Music opens."
+                "Hymn opened Edge or Chrome with a separate, temporary profile. It closes by itself once YouTube Music opens."
             } else {
-                "MusicSM opened your browser with a separate, temporary profile. Close it once YouTube Music opens."
+                "Hymn opened your browser with a separate, temporary profile. Close it once YouTube Music opens."
             }
         is YouTubeAccountState.Failed -> "Not signed in" to state.message
         YouTubeAccountState.SignedOut -> "Not signed in" to

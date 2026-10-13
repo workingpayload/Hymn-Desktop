@@ -1,8 +1,8 @@
-# Privacy Policy for MusicSM Desktop
+# Privacy Policy for Hymn
 
 **Effective date: October 1, 2026**
 
-MusicSM Desktop is published by Raj Pratap Singh ("we", "us", or "our"). This
+Hymn is published by Raj Pratap Singh ("we", "us", or "our"). This
 policy explains how the application handles information when you install and
 use it, including when obtained through the Microsoft Store.
 
@@ -10,7 +10,7 @@ For privacy questions or requests, contact **rs91963@gmail.com**.
 
 ## 1. Overview
 
-MusicSM Desktop does not require an account. We do not operate a MusicSM account
+Hymn does not require an account. We do not operate a Hymn account
 service or a server that receives your library, search history, or listening
 statistics. Signing in to YouTube is optional and only needed when YouTube
 refuses to play music anonymously on your network (see section 3). The
@@ -80,7 +80,7 @@ Depending on the features you use, the application contacts:
   session is also sent with requests for your personal YouTube Music home
   feed, your YouTube watch history, and your YouTube playlists (including
   Liked Music), which are shown in Home and Library. These are read only:
-  MusicSM Desktop does not report what you play back to YouTube, so plays in
+  Hymn does not report what you play back to YouTube, so plays in
   the app are not added to your YouTube history. The responses are kept in
   memory and not saved to disk.
 - **Spotify and Apple Music public playlist services:** when you import a
@@ -125,7 +125,7 @@ The destination website's privacy policy applies to that visit.
 ## 4. Playlist sharing and device access
 
 Playlist sharing creates a self-contained `musicsm://` link or QR image on your
-device, without uploading the playlist to a MusicSM sharing server. The shared
+device, without uploading the playlist to a Hymn sharing server. The shared
 payload includes the playlist name and track identifiers, titles, artists, and
 durations. It is encoded and compressed, **not encrypted**. Anyone who obtains
 the link or QR image can read its contents. If you send it through another
@@ -137,7 +137,7 @@ write information to the system clipboard.
 
 When global media keys are enabled, a system-wide keyboard hook receives key
 events so the application can respond to play/pause, next, previous, and stop
-keys. MusicSM Desktop does not record or transmit typed text or a keystroke
+keys. Hymn does not record or transmit typed text or a keystroke
 history. You can disable global media keys in Settings. The application does
 not use your microphone or camera for these features.
 
@@ -149,7 +149,7 @@ controls, remove liked songs or playlists, delete downloads, change indexed
 music folders, configure or disable individual lyrics sources, and disable
 animated artwork or choose its provider.
 
-To remove the application's primary local data, fully exit MusicSM Desktop,
+To remove the application's primary local data, fully exit Hymn,
 including its system tray process, and delete
 `%USERPROFILE%\.musicsm-desktop`. This also deletes downloads kept in the
 default download folder. Downloads in a custom folder and exported QR images
@@ -172,14 +172,14 @@ not provided to us or delete information held independently by other services.
 
 The application generally uses HTTPS for its configured online service
 requests. Primary local settings and library records are stored as ordinary
-files and are not encrypted by MusicSM Desktop; the optional YouTube session
+files and are not encrypted by Hymn; the optional YouTube session
 cookies are the exception (see section 3). Their protection depends on
 your operating system, user-account permissions, and device security.
 No storage or transmission method can be guaranteed completely secure.
 
 ## 7. Children
 
-MusicSM Desktop is not specifically directed at children. We do not knowingly
+Hymn is not specifically directed at children. We do not knowingly
 collect children's personal information through a publisher-operated account
 or analytics service. If you believe a child has provided personal information
 to us through support correspondence, contact us to request its deletion.
@@ -188,10 +188,10 @@ Third-party music services have their own age requirements and privacy policies.
 ## 8. Microsoft Store
 
 Microsoft may process information about Store downloads, installations,
-transactions, and diagnostics independently of MusicSM Desktop. Microsoft's
+transactions, and diagnostics independently of Hymn. Microsoft's
 handling of that information is described in the
 [Microsoft Privacy Statement](https://privacy.microsoft.com/privacystatement).
-This policy describes MusicSM Desktop, not Microsoft's services.
+This policy describes Hymn, not Microsoft's services.
 
 ## 9. Changes and contact
 

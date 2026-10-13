@@ -79,6 +79,9 @@ data class DesktopSettings(
 
     // Updates — a version the user said "Later" to, which isn't announced again.
     val dismissedUpdateVersion: String? = null,
+
+    // The one-time "MusicSM is now Hymn" intro has played (or was skipped on a fresh install).
+    val hymnIntroSeen: Boolean = false,
 )
 
 /** Observable, file-backed settings. Writes are synchronous and tiny, so no debouncing. */

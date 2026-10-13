@@ -196,7 +196,7 @@ fun LibraryScreen(
                 title = { Text("Open shared playlist") },
                 text = {
                     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Text("Paste a MusicSM shared playlist link or payload.")
+                        Text("Paste a Hymn shared playlist link or payload.")
                         OutlinedTextField(
                             value = sharedPayload,
                             onValueChange = { sharedPayload = it; sharedError = null },

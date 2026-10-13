@@ -83,7 +83,7 @@ fun EqualizerScreen(
                 Spacer(Modifier.width(12.dp))
                 Column(Modifier.weight(1f)) {
                     Text("Equalizer", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
-                    Text("Tune libVLC output with MusicSM's glass controls", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Text("Tune libVLC output with Hymn's glass controls", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 TextButton(onClick = { persist(enabled = false, preset = null, preamp = 0f, values = List(bandCount) { 0f }) }) {
                     Text("Reset", color = Coral, style = MaterialTheme.typography.labelLarge)

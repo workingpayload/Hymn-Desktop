@@ -1,4 +1,4 @@
-﻿package com.example.musicsmd.desktop
+package com.example.musicsmd.desktop
 
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.MusicNote
@@ -28,14 +28,14 @@ fun ApplicationScope.MusicSmTray(
     Tray(
         state = rememberTrayState(),
         icon = icon ?: fallback,
-        tooltip = song?.let { "${it.title} — ${it.artist}" } ?: "MusicSM Desktop",
+        tooltip = song?.let { "${it.title} — ${it.artist}" } ?: "Hymn",
         onAction = onShow,
         menu = {
             Item(if (playback.isPlaying) "Pause" else "Play", onClick = onPlayPause)
             Item("Next", onClick = onNext, enabled = song != null)
             Item("Previous", onClick = onPrevious, enabled = song != null)
             Separator()
-            Item("Show MusicSM", onClick = onShow)
+            Item("Show Hymn", onClick = onShow)
             Item("Quit", onClick = onQuit)
         },
     )

@@ -35,7 +35,7 @@ fun UpdateDialog(
         text = {
             Column(Modifier.widthIn(min = 360.dp, max = 460.dp)) {
                 Text(
-                    "MusicSM Desktop ${release.version} is out. You have ${AppVersion.current}.",
+                    "Hymn ${release.version} is out. You have ${AppVersion.current}.",
                     style = MaterialTheme.typography.bodyMedium,
                 )
                 Spacer(Modifier.height(8.dp))

@@ -86,7 +86,7 @@ fun HomeScreen(
         Row(verticalAlignment = Alignment.CenterVertically) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(greeting(), style = MaterialTheme.typography.headlineMedium, fontWeight = FontWeight.Bold)
-                Text("Made from your recent plays, likes and MusicSM picks", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text("Made from your recent plays, likes and Hymn picks", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             RefreshButton(
                 refreshing = state.isRefreshingHome,

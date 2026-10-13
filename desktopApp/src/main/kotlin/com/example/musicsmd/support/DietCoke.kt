@@ -204,7 +204,7 @@ fun DietCokeDialog(onDismiss: () -> Unit) {
                 horizontalAlignment = Alignment.CenterHorizontally,
             ) {
                 Text(
-                    "If you like MusicSM, buy me a Diet Coke! It keeps me going and keeps the app free for everyone.",
+                    "If you like Hymn, buy me a Diet Coke! It keeps me going and keeps the app free for everyone.",
                     style = MaterialTheme.typography.bodyMedium,
                     textAlign = TextAlign.Center,
                 )

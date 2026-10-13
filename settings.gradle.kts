@@ -16,7 +16,7 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "MusicSM-Desktop"
+rootProject.name = "Hymn-Desktop"
 include(":innertube")
 include(":motionart")
 include(":domain")

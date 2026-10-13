@@ -25,7 +25,7 @@ const val DOWNLOAD_PAGE_URL = "https://music-sm.vercel.app"
 
 /** This build's version. */
 object AppVersion {
-    /** -PappVersion at build time (the release tag without its "v"); "1.1.1" in local builds. */
+    /** -PappVersion at build time (the release tag without its "v"); "2.0.0" in local builds. */
     val current: String by lazy {
         AppVersion::class.java.getResource("/com/example/musicsmd/app-version.txt")
             ?.readText()?.trim()?.takeIf { it.isNotEmpty() }
@@ -77,7 +77,7 @@ class UpdateChecker(
         val request = Request.Builder()
             .url(feedUrl)
             .header("Accept", "application/vnd.github+json")
-            .header("User-Agent", "MusicSM-Desktop/$currentVersion")
+            .header("User-Agent", "Hymn/$currentVersion")
             .build()
         val body = client.newCall(request).execute().use { response ->
             // No release published yet.
@@ -95,7 +95,7 @@ class UpdateChecker(
 
     companion object {
         const val LATEST_RELEASE_URL =
-            "https://api.github.com/repos/workingpayload/MusicSM-Desktop/releases/latest"
+            "https://api.github.com/repos/workingpayload/Hymn-Desktop/releases/latest"
 
         private val json = Json { ignoreUnknownKeys = true }
     }
