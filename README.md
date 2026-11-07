@@ -232,7 +232,7 @@ side hasn't been trimmed or tested on a Mac yet. Options:
 - `-PvlcDir=<dir>` — bundle a VLC from somewhere else (on macOS, `VLC.app/Contents/MacOS`).
 - `-PbundleVlc=false` — leave VLC out; the app then uses the VLC installed on the system.
 - `-PrequireVlc=true` — fail instead of warning when there is no VLC to bundle (used by CI).
-- `-PappVersion=1.2.3` — the version (default `2.0.0`), for the installer and the app itself
+- `-PappVersion=1.2.3` — the version (default `2.1.0`), for the installer and the app itself
   (Settings → About, and the update notice's comparison). It must be plain numbers, and the first
   one must be at least 1 for the DMG.
 
@@ -266,8 +266,8 @@ Release:
 git branch -M main
 git remote add origin https://github.com/workingpayload/Hymn-Desktop.git
 git push -u origin main
-git tag v2.0.0
-git push origin v2.0.0
+git tag v2.1.0
+git push origin v2.1.0
 ```
 
 The tag sets the version (`v1.2.3` → 1.2.3; `v1.2.3-beta` → 1.2.3, published as a pre-release).

@@ -12,13 +12,14 @@ data class RestoredQueue(
     val originalQueue: List<Song>,
     val index: Int,
     val positionMs: Long,
+    val isPlaylist: Boolean = false,
 )
 
 /** Tiny JSON queue store under `~/.musicsm-desktop/queue.json`. */
 class QueuePersistence(private val file: File = File(AppPaths.dataDir, "queue.json")) {
     private val json = Json { ignoreUnknownKeys = true; prettyPrint = true; encodeDefaults = true }
 
-    fun save(queue: List<Song>, originalQueue: List<Song>, index: Int, positionMs: Long) {
+    fun save(queue: List<Song>, originalQueue: List<Song>, index: Int, positionMs: Long, isPlaylist: Boolean = false) {
         if (queue.isEmpty()) {
             clear()
             return
@@ -30,6 +31,7 @@ class QueuePersistence(private val file: File = File(AppPaths.dataDir, "queue.js
                 originalQueue = originalQueue.takeIf { it.isNotEmpty() }?.map(PersistedSong::from).orEmpty(),
                 index = index.coerceIn(queue.indices),
                 positionMs = positionMs.coerceAtLeast(0L),
+                isPlaylist = isPlaylist,
             )
             val tmp = File(file.parentFile, file.name + ".tmp")
             tmp.writeText(json.encodeToString(PersistedQueue.serializer(), snapshot))
@@ -52,6 +54,7 @@ class QueuePersistence(private val file: File = File(AppPaths.dataDir, "queue.js
             originalQueue = originals,
             index = persisted.index.coerceIn(songs.indices),
             positionMs = persisted.positionMs.coerceAtLeast(0L),
+            isPlaylist = persisted.isPlaylist,
         )
     }.getOrNull()
 
@@ -66,6 +69,7 @@ private data class PersistedQueue(
     val originalQueue: List<PersistedSong> = emptyList(),
     val index: Int = 0,
     val positionMs: Long = 0L,
+    val isPlaylist: Boolean = false,
 )
 
 @Serializable

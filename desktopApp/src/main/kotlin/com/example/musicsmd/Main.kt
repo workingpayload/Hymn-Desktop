@@ -89,6 +89,7 @@ import com.example.musicsmd.player.NowPlayingScreen
 import com.example.musicsmd.player.PlayerBar
 import com.example.musicsmd.player.QueuePanel
 import com.example.musicsmd.player.SongActions
+import com.example.musicsmd.player.isLoopablePlaylistId
 import com.example.musicsmd.search.SearchScreen
 import com.example.musicsmd.settings.SettingsScreen
 import com.example.musicsmd.share.PlaylistShareDialog
@@ -526,7 +527,8 @@ fun App(
                                             playlists = navState.playlists,
                                             youTubePlaylists = navState.youTubePlaylists,
                                             isLiked = ::isLiked,
-                                            onSongClick = ::playSong,
+                                            // Its only play is "Liked Songs", which loops like a playlist.
+                                            onSongClick = { song, queue -> viewModel.play(song, queue, isPlaylist = true) },
                                             onToggleLike = viewModel::toggleLike,
                                             onPlaylistClick = { viewModel.navigateTo(Screen.PlaylistDetail(it.id)) },
                                             onCreatePlaylist = viewModel::createPlaylist,
@@ -567,7 +569,9 @@ fun App(
                                             isLoading = navState.isLoadingDetail,
                                             isLiked = ::isLiked,
                                             onBack = viewModel::navigateBack,
-                                            onSongClick = ::playSong,
+                                            onSongClick = { song, queue ->
+                                                viewModel.play(song, queue, isPlaylist = isLoopablePlaylistId(screen.playlistId))
+                                            },
                                             onToggleLike = viewModel::toggleLike,
                                             onDownloadAll = { songs ->
                                                 coroutineScope.launch {
@@ -630,7 +634,7 @@ fun App(
                                             payload = screen.payload,
                                             libraryRepository = AppGraph.libraryRepository,
                                             onBack = viewModel::navigateBack,
-                                            onPlay = ::playSong,
+                                            onPlay = { song, queue -> viewModel.play(song, queue, isPlaylist = true) },
                                             onOpenPlaylist = { viewModel.navigateTo(Screen.PlaylistDetail(it.toString())) },
                                         )
                                     }
@@ -651,6 +655,11 @@ fun App(
                                 onRemove = viewModel::removeFromQueue,
                                 onMove = viewModel::moveInQueue,
                                 onClearUpcoming = viewModel::clearUpcoming,
+                                onSaveAsPlaylist = { name ->
+                                    val count = playback.queue.distinctBy { it.id }.size
+                                    viewModel.createPlaylistWithSongs(name, playback.queue)
+                                    toastMessage = "Saved $count ${if (count == 1) "song" else "songs"} to $name"
+                                },
                                 modifier = Modifier.padding(bottom = bottomInset),
                             )
                         }

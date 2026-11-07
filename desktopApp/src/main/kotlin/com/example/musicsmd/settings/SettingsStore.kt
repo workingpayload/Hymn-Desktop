@@ -28,6 +28,8 @@ enum class HomeLayout { LIST, CARDS }
 data class DesktopSettings(
     // Playback
     val autoplayRadio: Boolean = true,
+    // A playlist (or Liked Songs) starts again from the top when it ends.
+    val loopPlaylists: Boolean = true,
     val shuffle: Boolean = false,
     val repeatMode: RepeatMode = RepeatMode.OFF,
     val volume: Int = 100,

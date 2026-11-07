@@ -178,6 +178,10 @@ class AppViewModel(
     private var seekAtNanos = 0L
     private var originalQueue: List<Song> = emptyList()
 
+    /** The queue came from a playlist (or Liked Songs), so it starts over when it ends ("Loop playlists"). */
+    @Volatile
+    private var queueIsPlaylist = false
+
     /** The song libVLC is actually playing; null while switching, so the old track's events are ignored. */
     @Volatile
     private var loadedSongId: String? = null
@@ -316,7 +320,7 @@ class AppViewModel(
                 .collect { (state, positionMs) ->
                     if (!settingsStore.current.restoreQueue) return@collect
                     if (state.currentSong == null || state.queue.isEmpty()) return@collect
-                    queuePersistence.save(state.queue, originalQueue.ifEmpty { state.queue }, state.queueIndex, positionMs)
+                    queuePersistence.save(state.queue, originalQueue.ifEmpty { state.queue }, state.queueIndex, positionMs, queueIsPlaylist)
                 }
         }
     }
@@ -325,6 +329,7 @@ class AppViewModel(
         if (!settingsStore.current.restoreQueue) return
         val saved = queuePersistence.load() ?: return
         originalQueue = saved.originalQueue
+        queueIsPlaylist = saved.isPlaylist
         val current = saved.queue.getOrNull(saved.index) ?: return
         _playback.update {
             it.copy(
@@ -557,6 +562,14 @@ class AppViewModel(
         library.addToPlaylist(playlistId, song)
     }
 
+    /** Saves [songs] (e.g. the current queue) as a new playlist; a song queued twice is added once. */
+    fun createPlaylistWithSongs(name: String, songs: List<Song>) = scope.launch {
+        val clean = name.trim()
+        if (clean.isBlank() || songs.isEmpty()) return@launch
+        val playlistId = library.createPlaylist(clean)
+        songs.distinctBy { it.id }.forEach { library.addToPlaylist(playlistId, it) }
+    }
+
     fun goToAlbum(song: Song) = scope.launch {
         val albumName = song.album?.trim().orEmpty()
         if (albumName.isBlank()) return@launch
@@ -573,10 +586,14 @@ class AppViewModel(
 
     // ---- Playback ----
 
-    /** Plays [song], replacing the queue with [queue] (defaults to just this song). */
-    fun play(song: Song, queue: List<Song> = listOf(song)) = scope.launch {
+    /**
+     * Plays [song], replacing the queue with [queue] (defaults to just this song). A queue from a
+     * playlist ([isPlaylist]) starts over when it ends, while "Loop playlists" is on.
+     */
+    fun play(song: Song, queue: List<Song> = listOf(song), isPlaylist: Boolean = false) = scope.launch {
         val cleanQueue = queue.ifEmpty { listOf(song) }
         originalQueue = cleanQueue
+        queueIsPlaylist = isPlaylist
         val (playQueue, index) = playbackQueueFor(song, cleanQueue, _playback.value.shuffle)
         startSong(song, playQueue, index)
     }
@@ -666,9 +683,13 @@ class AppViewModel(
 
     private fun nextIndexOf(state: PlaybackUiState): Int? = when {
         state.queueIndex + 1 in state.queue.indices -> state.queueIndex + 1
-        state.repeatMode == RepeatMode.ALL && state.queue.isNotEmpty() -> 0
+        loopsQueue(state) -> 0
         else -> null
     }
+
+    /** Repeat all, or a playlist's queue with "Loop playlists" on: the end wraps to the start. */
+    private fun loopsQueue(state: PlaybackUiState): Boolean = state.queue.isNotEmpty() &&
+        (state.repeatMode == RepeatMode.ALL || (queueIsPlaylist && settingsStore.current.loopPlaylists))
 
     fun playPreviousInQueue() {
         val state = _playback.value
@@ -678,7 +699,7 @@ class AppViewModel(
         }
         val prevIndex = when {
             state.queueIndex - 1 in state.queue.indices -> state.queueIndex - 1
-            state.repeatMode == RepeatMode.ALL && state.queue.isNotEmpty() -> state.queue.lastIndex
+            loopsQueue(state) -> state.queue.lastIndex
             else -> return
         }
         val prev = state.queue.getOrNull(prevIndex) ?: return
@@ -773,6 +794,7 @@ class AppViewModel(
 
     /** Plays [song] followed by YouTube Music's related tracks ("Start radio"). */
     fun startRadio(song: Song) = scope.launch {
+        queueIsPlaylist = false
         startSong(song, listOf(song), 0)
         val related = SongVariants.freshSongs(
             runCatching { musicSource.relatedTo(song.id) }.getOrDefault(emptyList()),
@@ -956,7 +978,7 @@ class AppViewModel(
                     val nextIndex = state.queueIndex + 1
                     startSong(state.queue[nextIndex], state.queue, nextIndex)
                 }
-                state.repeatMode == RepeatMode.ALL && state.queue.isNotEmpty() -> startSong(state.queue.first(), state.queue, 0)
+                loopsQueue(state) -> startSong(state.queue.first(), state.queue, 0)
                 settingsStore.current.autoplayRadio && !current.id.startsWith(LOCAL_ID_PREFIX) -> autoplayRadioAfter(current, state)
                 else -> {
                     finishCurrentSong()
@@ -1035,7 +1057,7 @@ class AppViewModel(
     fun dispose() {
         if (settingsStore.current.restoreQueue) {
             val state = _playback.value
-            queuePersistence.save(state.queue, originalQueue.ifEmpty { state.queue }, state.queueIndex, _position.value)
+            queuePersistence.save(state.queue, originalQueue.ifEmpty { state.queue }, state.queueIndex, _position.value, queueIsPlaylist)
         }
         sleepTimerManager.cancel()
         finishCurrentSong()
@@ -1063,3 +1085,9 @@ class AppViewModel(
         const val SEARCH_DEBOUNCE_MS = 350L
     }
 }
+
+/**
+ * Whether a playlist page's id is a real playlist rather than an album opened as one (YouTube
+ * album browse ids and their "OLAK5…" playlists), so playing it loops like on mobile.
+ */
+internal fun isLoopablePlaylistId(id: String): Boolean = !id.contains("MPREb") && !id.contains("OLAK5")

@@ -124,6 +124,9 @@ fun SettingsScreen(
                 SettingsSwitch("Autoplay radio", "Keep the queue going with related tracks.", settings.autoplayRadio) {
                     onUpdate { it.copy(autoplayRadio = it.autoplayRadio.not()) }
                 }
+                SettingsSwitch("Loop playlists", "Start a playlist again from the top when it ends.", settings.loopPlaylists) {
+                    onUpdate { it.copy(loopPlaylists = it.loopPlaylists.not()) }
+                }
                 SettingsSwitch("Restore queue", "Remember your queue between launches.", settings.restoreQueue) {
                     onUpdate { it.copy(restoreQueue = it.restoreQueue.not()) }
                 }

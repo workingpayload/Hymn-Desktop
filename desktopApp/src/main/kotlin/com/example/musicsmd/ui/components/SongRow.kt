@@ -284,8 +284,8 @@ private fun MenuItem(
 }
 
 @Composable
-private fun NewPlaylistDialog(onCreate: (String) -> Unit, onDismiss: () -> Unit) {
-    var name by remember { mutableStateOf("") }
+internal fun NewPlaylistDialog(onCreate: (String) -> Unit, onDismiss: () -> Unit, initialName: String = "") {
+    var name by remember { mutableStateOf(initialName) }
     AlertDialog(
         onDismissRequest = onDismiss,
         title = { Text("New playlist") },

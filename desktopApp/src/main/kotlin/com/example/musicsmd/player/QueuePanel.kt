@@ -19,6 +19,7 @@ import androidx.compose.material.icons.filled.ClearAll
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.KeyboardArrowUp
+import androidx.compose.material.icons.filled.PlaylistAdd
 import androidx.compose.material.icons.filled.Repeat
 import androidx.compose.material.icons.filled.RepeatOne
 import androidx.compose.material.icons.filled.Shuffle
@@ -27,6 +28,10 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -35,8 +40,11 @@ import androidx.compose.ui.unit.dp
 import com.example.musicsmd.settings.RepeatMode
 import com.example.musicsmd.ui.components.ArtworkImage
 import com.example.musicsmd.ui.components.GlassPanel
+import com.example.musicsmd.ui.components.NewPlaylistDialog
 import com.example.musicsmd.ui.theme.Coral
 import com.example.musicsmd.ui.theme.GlassFillStrong
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 
 /** Slide-in editable queue with MusicSM's glass treatment and playback-mode indicators. */
 @Composable
@@ -47,8 +55,22 @@ fun QueuePanel(
     onRemove: (Int) -> Unit,
     onMove: (Int, Int) -> Unit,
     onClearUpcoming: () -> Unit,
+    onSaveAsPlaylist: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showSave by remember { mutableStateOf(false) }
+    if (showSave) {
+        // Named after when it was saved, as on mobile; a radio queue has no better name.
+        val defaultName = remember { "Queue · " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("d MMM, HH:mm")) }
+        NewPlaylistDialog(
+            initialName = defaultName,
+            onCreate = { name ->
+                showSave = false
+                onSaveAsPlaylist(name)
+            },
+            onDismiss = { showSave = false },
+        )
+    }
     GlassPanel(
         modifier = modifier.fillMaxHeight().width(380.dp).padding(vertical = 12.dp, horizontal = 8.dp),
         shape = RoundedCornerShape(24.dp),
@@ -62,6 +84,9 @@ fun QueuePanel(
                 Column(Modifier.weight(1f)) {
                     Text("Queue", style = MaterialTheme.typography.titleMedium, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                     ModeIndicators(state)
+                }
+                IconButton(onClick = { showSave = true }, enabled = state.queue.isNotEmpty()) {
+                    Icon(Icons.Filled.PlaylistAdd, contentDescription = "Save queue as playlist", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
                 IconButton(onClick = onClearUpcoming, enabled = state.queueIndex + 1 < state.queue.size) {
                     Icon(Icons.Filled.ClearAll, contentDescription = "Clear upcoming", tint = MaterialTheme.colorScheme.onSurfaceVariant)

@@ -24,6 +24,7 @@ import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -55,6 +56,8 @@ import com.example.musicsmd.share.qrImageBitmap
 import com.example.musicsmd.ui.theme.Coral
 import com.example.musicsmd.ui.theme.GlassFillStrong
 import com.example.musicsmd.ui.theme.GlassStroke
+import java.awt.Desktop
+import java.net.URI
 import kotlin.math.PI
 import kotlin.math.sin
 import kotlinx.coroutines.delay
@@ -67,6 +70,9 @@ object DietCoke {
 
     /** A UPI payment request any UPI app understands, with the amount left to the payer. */
     const val UPI_URI = "upi://pay?pa=$UPI_ID&pn=$PAYEE&cu=INR"
+
+    /** For anyone outside India: card or PayPal, the same page the website and phone app link to. */
+    const val KOFI_URL = "https://ko-fi.com/workingpayload"
 
     /** The website's cup-with-a-straw icon (a 24 × 24 stroke drawing), so every MusicSM shows the same one. */
     val icon: ImageVector by lazy {
@@ -245,6 +251,19 @@ fun DietCokeDialog(onDismiss: () -> Unit) {
                         copied = true
                     }) { Text(if (copied) "Copied" else "Copy") }
                 }
+                Spacer(Modifier.height(18.dp))
+                Text(
+                    "Outside India? Card or PayPal works on Ko-fi:",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    textAlign = TextAlign.Center,
+                )
+                Spacer(Modifier.height(8.dp))
+                Button(
+                    onClick = { runCatching { Desktop.getDesktop().browse(URI(DietCoke.KOFI_URL)) } },
+                    colors = ButtonDefaults.buttonColors(containerColor = KofiRed, contentColor = Color.White),
+                    modifier = Modifier.fillMaxWidth(),
+                ) { Text("Support on Ko-fi") }
             }
         },
         confirmButton = { TextButton(onClick = onDismiss) { Text("Close") } },
@@ -252,3 +271,6 @@ fun DietCokeDialog(onDismiss: () -> Unit) {
 }
 
 private const val FIZZ_DELAY_MS = 1_200L
+
+/** Ko-fi's own button colour, as on the website. */
+private val KofiRed = Color(0xFFFF5E5B)
