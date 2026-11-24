@@ -52,12 +52,35 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       # The installers carry libVLC (see prepareBundledVlc), copied from the VLC installed here.
+      # Package feeds have outages (a Chocolatey 504 failed the v2.2.0 build, and choco still
+      # exited 0), so each install is retried and checked; on Windows the last resort is VideoLAN's
+      # own zip, handed to Gradle as -PvlcDir.
       - name: Install VLC
         run: |
           if [[ "$RUNNER_OS" == Windows ]]; then
-            choco install vlc --no-progress -y
+            for attempt in 1 2 3; do
+              choco install vlc --no-progress -y || true
+              [[ -f "/c/Program Files/VideoLAN/VLC/libvlc.dll" ]] && exit 0
+              echo "Chocolatey attempt $attempt didn't install VLC"
+              sleep 20
+            done
+            base=https://download.videolan.org/pub/videolan/vlc/last/win64
+            zip="$(curl -fsSL --retry 5 "$base/" | grep -o 'vlc-[0-9.]*-win64\.zip' | head -n 1)"
+            [[ -n "$zip" ]] || { echo "No VLC zip listed at $base"; exit 1; }
+            tmp="$(cygpath -u "$RUNNER_TEMP")"
+            curl -fsSL --retry 5 -o "$tmp/vlc.zip" "$base/$zip"
+            unzip -q "$tmp/vlc.zip" -d "$tmp/vlc"
+            dir="$tmp/vlc/${zip%-win64.zip}"
+            [[ -f "$dir/libvlc.dll" ]] || { echo "No libvlc.dll in $zip"; exit 1; }
+            echo "Using $zip from VideoLAN"
+            echo "VLC_DIR=$(cygpath -w "$dir")" >> "$GITHUB_ENV"
           else
-            brew install --cask vlc
+            for attempt in 1 2 3; do
+              brew install --cask vlc && [[ -d /Applications/VLC.app ]] && exit 0
+              echo "Homebrew attempt $attempt didn't install VLC"
+              sleep 20
+            done
+            exit 1
           fi
 
       # v1.2.3 -> 1.2.3. A suffix like -beta is dropped: installer versions must be plain numbers.
@@ -76,6 +99,7 @@ jobs:
           ./gradlew :desktopApp:${{ matrix.task }}
           "-PappVersion=$APP_VERSION"
           -PrequireVlc=true
+          ${VLC_DIR:+"-PvlcDir=$VLC_DIR"}
           "-Dorg.gradle.java.installations.paths=$JDK17"
 
       - name: Name the installer
