@@ -84,6 +84,9 @@ data class DesktopSettings(
 
     // The one-time "MusicSM is now Hymn" intro has played (or was skipped on a fresh install).
     val hymnIntroSeen: Boolean = false,
+
+    // When the "Buy me a Diet Coke" popup last showed by itself (epoch ms), or 0 if never.
+    val supportPromptShownAt: Long = 0L,
 )
 
 /** Observable, file-backed settings. Writes are synchronous and tiny, so no debouncing. */

@@ -319,7 +319,7 @@ fun SettingsScreen(
                 SettingsSwitch("Minimize to tray", "Keep Hymn running when the window closes.", settings.minimizeToTray) {
                     onUpdate { it.copy(minimizeToTray = it.minimizeToTray.not()) }
                 }
-                SettingsSwitch("Global media keys", "Listen for play/pause/next/previous keys.", settings.mediaKeys) {
+                SettingsSwitch("Global media keys", MEDIA_KEYS_DETAIL, settings.mediaKeys) {
                     onUpdate { it.copy(mediaKeys = it.mediaKeys.not()) }
                 }
             }
@@ -524,6 +524,14 @@ private fun orderedLyrics(settings: DesktopSettings): List<LyricsSource> {
     val saved = settings.lyricsSourceOrder.mapNotNull { LyricsSource.fromName(it) }
     return saved + LyricsSource.entries.filter { it !in saved }
 }
+
+/** On Windows the switch also puts Hymn in the system media controls, which bring the keys. */
+private val MEDIA_KEYS_DETAIL =
+    if (System.getProperty("os.name").orEmpty().startsWith("Windows", ignoreCase = true)) {
+        "Play/pause/next/previous keys, and Hymn in the Windows media controls."
+    } else {
+        "Listen for play/pause/next/previous keys."
+    }
 
 private val LyricsSource.description: String
     get() = when (this) {

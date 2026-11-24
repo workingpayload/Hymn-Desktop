@@ -5,11 +5,13 @@ import com.example.musicsm.data.source.youtube.signin.YouTubeSignInRequiredExcep
 import com.example.musicsmd.youtube.BrowserUnavailableException
 import com.example.musicsm.domain.model.Album
 import com.example.musicsm.domain.model.Artist
+import com.example.musicsm.domain.model.BrowseTile
 import com.example.musicsm.domain.model.HomeFeed
 import com.example.musicsm.domain.model.HomeItem
 import com.example.musicsm.domain.model.Playlist
 import com.example.musicsm.domain.model.SearchResults
 import com.example.musicsm.domain.model.Song
+import com.example.musicsm.domain.recommend.DailyMix
 import com.example.musicsm.domain.recommend.SongVariants
 import com.example.musicsm.domain.repository.LibraryRepository
 import com.example.musicsm.domain.repository.MusicRepository
@@ -88,6 +90,10 @@ data class AppUiState(
     val isRefreshingHome: Boolean = false,
     /** Bumped whenever Home gets a whole new feed, so it can scroll back to the top. */
     val homeGeneration: Int = 0,
+    /** Today's daily mixes, shown as their own row on Home; empty hides it. */
+    val homeMixes: List<DailyMix> = emptyList(),
+    /** The Home mood chip whose queue is being fetched, by tile id. */
+    val moodLoading: String? = null,
     val likedSongs: List<Song> = emptyList(),
     val playlists: List<Playlist> = emptyList(),
     val albumDetail: Album? = null,
@@ -389,8 +395,12 @@ class AppViewModel(
 
     fun loadHome() = scope.launch {
         _uiState.update { it.copy(isLoadingHome = true, error = null) }
-        runCatching { homeFeedBuilder.initialFeed(homeRefreshCount) }
-            .onSuccess { feed -> _uiState.update { it.copy(homeFeed = feed, isLoadingHome = false, homeGeneration = it.homeGeneration + 1) } }
+        runCatching { homeFeedBuilder.initialHome(homeRefreshCount) }
+            .onSuccess { home ->
+                _uiState.update {
+                    it.copy(homeFeed = home.feed, homeMixes = home.mixes, isLoadingHome = false, homeGeneration = it.homeGeneration + 1)
+                }
+            }
             .onFailure { e -> _uiState.update { it.copy(isLoadingHome = false, error = e.message) } }
     }
 
@@ -418,11 +428,12 @@ class AppViewModel(
         _uiState.update { it.copy(isRefreshingHome = true, error = null) }
         scope.launch {
             val refresh = ++homeRefreshCount
-            runCatching { homeFeedBuilder.initialFeed(refresh) }
-                .onSuccess { feed ->
+            runCatching { homeFeedBuilder.initialHome(refresh) }
+                .onSuccess { home ->
                     _uiState.update {
                         it.copy(
-                            homeFeed = feed,
+                            homeFeed = home.feed,
+                            homeMixes = home.mixes,
                             isRefreshingHome = false,
                             isLoadingMoreHome = false,
                             homeGeneration = it.homeGeneration + 1,
@@ -596,6 +607,33 @@ class AppViewModel(
         queueIsPlaylist = isPlaylist
         val (playQueue, index) = playbackQueueFor(song, cleanQueue, _playback.value.shuffle)
         startSong(song, playQueue, index)
+    }
+
+    /** Shuffle-play a list: turns shuffle on (never off) and starts on a random track. */
+    fun shufflePlay(songs: List<Song>) {
+        if (songs.isEmpty()) return
+        if (!_playback.value.shuffle) {
+            _playback.update { it.copy(shuffle = true) }
+            settingsStore.update { it.copy(shuffle = true) }
+        }
+        play(songs.random(), songs)
+    }
+
+    /**
+     * Plays a Home mood chip: the catalog's tracks for the mood, the listener's favourites first.
+     * [onFailed] runs when nothing came back.
+     */
+    fun playMood(tile: BrowseTile, onFailed: () -> Unit) {
+        if (_uiState.value.moodLoading != null) return
+        _uiState.update { it.copy(moodLoading = tile.id) }
+        scope.launch {
+            try {
+                val queue = runCatching { homeFeedBuilder.moodQueue(tile) }.getOrDefault(emptyList())
+                if (queue.isEmpty()) onFailed() else play(queue.first(), queue)
+            } finally {
+                _uiState.update { it.copy(moodLoading = null) }
+            }
+        }
     }
 
     fun togglePlayPause() {

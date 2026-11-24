@@ -17,9 +17,14 @@ Feature parity with the mobile app, minus Android-only pieces (see bottom of lis
 - **Navigation**: the mobile app's landscape `SideDock` — one Liquid Glass pane on the left with a
   sliding selection puck (Search / Listen / Library / Downloads / Local / Stats / Settings), with
   back-stack; window sized to the usable screen.
-- **Home**: personalized feed like mobile's: recently played, listen again, daily discover,
-  recommended for you, "More like …", your artists, from artists you follow, forgotten favorites,
-  daily mix and albums from your artists (ranked with `ShelfRanker`/`TasteProfile`), then
+- **Home**: the date and a time-of-day greeting up top, a row of **mood chips** (each starts a
+  queue for the mood, favourites first, leaving out hour-long compilations), a **featured
+  carousel** (arrows, dots, trackpad or Shift + wheel; songs play or shuffle, albums and playlists
+  open), up to four **daily mixes** grown from different favourites, then a personalized feed like
+  mobile's: recently played, listen again, **new from artists you follow** (this and last year's
+  releases, newest first), daily discover,
+  recommended for you, "More like …", your artists, from artists you follow, forgotten favorites
+  and albums from your artists (ranked with `ShelfRanker`/`TasteProfile`), then
   YouTube Music's shelves (song rows and album/artist/playlist cards). More shelves load as you
   scroll, then a "More from …" shelf per remaining followed artist. **Refresh** in the header (or
   F5) rebuilds the feed with the current shelves left on screen until the new ones arrive. Each
@@ -139,8 +144,10 @@ Feature parity with the mobile app, minus Android-only pieces (see bottom of lis
   reported to YouTube.
 - **Desktop extras**: keyboard shortcuts (Space play/pause, Ctrl+←/→ prev/next, Shift+←/→ seek,
   Ctrl+↑/↓ volume, Ctrl+L like, Ctrl+S shuffle, Ctrl+R repeat, F5 refresh Home, Esc back; all but Esc are ignored
-  while typing in a text field, so a space in a search doesn't pause the music), global media keys
-  (JNativeHook), system tray with optional minimize-to-tray.
+  while typing in a text field, so a space in a search doesn't pause the music), media keys and
+  Windows' media controls (Hymn shows in the media flyout with the song, cover and progress, and
+  its buttons and seek bar control it; Windows routes the keyboard's media keys to it, and
+  JNativeHook hears them on other systems), system tray with optional minimize-to-tray.
 - **Update notice**: like mobile's update prompt, minus the self-install. An installed build checks
   this repo's latest GitHub release a few seconds after launch and every 6 hours; when it's newer
   than the running version, a dialog shows the release notes and sends you to
@@ -232,7 +239,7 @@ side hasn't been trimmed or tested on a Mac yet. Options:
 - `-PvlcDir=<dir>` — bundle a VLC from somewhere else (on macOS, `VLC.app/Contents/MacOS`).
 - `-PbundleVlc=false` — leave VLC out; the app then uses the VLC installed on the system.
 - `-PrequireVlc=true` — fail instead of warning when there is no VLC to bundle (used by CI).
-- `-PappVersion=1.2.3` — the version (default `2.1.0`), for the installer and the app itself
+- `-PappVersion=1.2.3` — the version (default `2.2.0`), for the installer and the app itself
   (Settings → About, and the update notice's comparison). It must be plain numbers, and the first
   one must be at least 1 for the DMG.
 
@@ -266,8 +273,8 @@ Release:
 git branch -M main
 git remote add origin https://github.com/workingpayload/Hymn-Desktop.git
 git push -u origin main
-git tag v2.1.0
-git push origin v2.1.0
+git tag v2.2.0
+git push origin v2.2.0
 ```
 
 The tag sets the version (`v1.2.3` → 1.2.3; `v1.2.3-beta` → 1.2.3, published as a pre-release).

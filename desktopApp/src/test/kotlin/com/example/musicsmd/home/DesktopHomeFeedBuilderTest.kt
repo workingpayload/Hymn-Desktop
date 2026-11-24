@@ -1,8 +1,10 @@
 package com.example.musicsmd.home
 
 import com.example.musicsm.data.source.youtube.signin.YouTubeAccountLibrary
+import com.example.musicsm.domain.model.Album
 import com.example.musicsm.domain.model.Artist
 import com.example.musicsm.domain.model.ArtistPlayCount
+import com.example.musicsm.domain.model.BrowseTile
 import com.example.musicsm.domain.model.HomeFeed
 import com.example.musicsm.domain.model.HomeItem
 import com.example.musicsm.domain.model.HomeSection
@@ -16,6 +18,7 @@ import com.example.musicsm.domain.repository.MusicRepository
 import com.example.musicsm.domain.repository.StatsRepository
 import com.example.musicsmd.stats.SkipSignals
 import java.lang.reflect.Proxy
+import java.time.LocalDate
 import java.util.Collections
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -36,7 +39,9 @@ class DesktopHomeFeedBuilderTest {
 
     private val followed = (1..8).map { Artist(id = "a$it", name = "Followed $it") }
 
-    private inner class FakeMusic : MusicRepository by unimplemented() {
+    private inner class FakeMusic(
+        private val albums: (String) -> List<Album> = { emptyList() },
+    ) : MusicRepository by unimplemented() {
         val seedCalls: MutableList<List<String>> = Collections.synchronizedList(mutableListOf())
 
         override suspend fun homeFeed() = HomeFeed()
@@ -47,7 +52,12 @@ class DesktopHomeFeedBuilderTest {
             return listOf(track("skipped")) + (1..20).map { track("rec-${seeds.first().id}-$it", artist = "New ${seeds.first().id} $it") }
         }
         override suspend fun artist(id: String) =
-            Artist(id = id, name = "Followed ${id.drop(1)}", topSongs = (1..6).map { track("$id-top$it", artist = "Followed ${id.drop(1)}") })
+            Artist(
+                id = id,
+                name = "Followed ${id.drop(1)}",
+                topSongs = (1..6).map { track("$id-top$it", artist = "Followed ${id.drop(1)}") },
+                albums = albums(id),
+            )
     }
 
     private val library = object : LibraryRepository by unimplemented() {
@@ -145,6 +155,28 @@ class DesktopHomeFeedBuilderTest {
         assertNull(cursor)
     }
 
+    @Test
+    fun newReleasesComeFromFollowedArtistsAndMixesFromHistory() = runBlocking {
+        val year = LocalDate.now().year
+        // Artist-page cards repeat the title as the byline; the builder credits the page's artist.
+        val music = FakeMusic { id ->
+            listOf(Album("$id-new", "New $id", "New $id", year = "$year"), Album("$id-old", "Old $id", "Old $id", year = "2001"))
+        }
+        val home = DesktopHomeFeedBuilder(music, library, stats).initialHome()
+
+        val releases = home.feed.sections
+            .first { it.title == DesktopHomeFeedBuilder.NEW_RELEASES_TITLE }
+            .items.map { (it as HomeItem.AlbumItem).album }
+        assertTrue(releases.toString(), releases.isNotEmpty() && releases.all { it.id.endsWith("-new") })
+        assertTrue(releases.toString(), releases.all { it.artist.startsWith("Followed ") })
+        // Offered once: the older-albums row leaves the new releases out.
+        val olderAlbums = home.feed.sections.firstOrNull { it.title == "Albums from your artists" }?.items.orEmpty()
+        assertTrue(olderAlbums.none { (it as HomeItem.AlbumItem).album.id.endsWith("-new") })
+
+        assertTrue(home.mixes.toString(), home.mixes.size >= 2)
+        assertEquals((1..home.mixes.size).toList(), home.mixes.map { it.number })
+    }
+
     private class FakeAccount(override val isAvailable: Boolean = true) : YouTubeAccountLibrary {
         val continuations = mutableListOf<String>()
         override suspend fun accountHome() = HomeFeed(
@@ -189,6 +221,19 @@ class DesktopHomeFeedBuilderTest {
         assertFalse("Quick picks" in titles)
         assertFalse("Recently played on YouTube" in titles)
         assertEquals(DesktopHomeFeedBuilder.ARTIST_CURSOR, feed.continuation)
+    }
+
+    @Test
+    fun moodQueueLeavesOutLongCompilations() = runBlocking {
+        val music = object : MusicRepository by FakeMusic() {
+            override suspend fun searchSongs(query: String) = listOf(
+                Song("mix", "3 Hours of Chill", "Lofi Channel", durationMs = 3 * 60 * 60_000L),
+                Song("song", "A song", "Singer", durationMs = 3 * 60_000L),
+                Song("unknown", "Length unknown", "Other"),
+            )
+        }
+        val queue = DesktopHomeFeedBuilder(music, library, stats).moodQueue(BrowseTile("chill", "Chill", 0L, "chill"))
+        assertEquals(setOf("song", "unknown"), queue.map { it.id }.toSet())
     }
 
     @Suppress("UNCHECKED_CAST")

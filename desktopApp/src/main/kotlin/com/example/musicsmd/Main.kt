@@ -94,6 +94,7 @@ import com.example.musicsmd.search.SearchScreen
 import com.example.musicsmd.settings.SettingsScreen
 import com.example.musicsmd.share.PlaylistShareDialog
 import com.example.musicsmd.support.DietCokeDialog
+import com.example.musicsmd.support.SupportPromptState
 import com.example.musicsmd.share.SharedPlaylistScreen
 import com.example.musicsmd.share.copyTextToClipboard
 import com.example.musicsmd.stats.StatsScreen
@@ -121,6 +122,7 @@ import com.example.musicsmd.youtube.YouTubeAccountState
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.TextButton
 import com.example.musicsmd.desktop.WindowChrome
+import com.example.musicsmd.desktop.WindowsAppIdentity
 import com.example.musicsmd.rename.HymnIntroOverlay
 import com.example.musicsmd.rename.HymnIntroState
 import com.example.musicsmd.rename.hasAppData
@@ -258,6 +260,13 @@ fun App(
     var toastMessage by remember { mutableStateOf<String?>(null) }
     var sharePlaylist by remember { mutableStateOf<Playlist?>(null) }
     var showDietCoke by remember { mutableStateOf(false) }
+    val homeMoods = remember { AppGraph.musicRepository.browseTiles() }
+    // "Buy me a Diet Coke" every couple of days, at a random moment while the window is open.
+    val supportPrompt = remember { SupportPromptState(AppGraph.settingsStore) }
+    val showSupportPrompt by supportPrompt.visible.collectAsState()
+    LaunchedEffect(windowActive) {
+        if (windowActive) supportPrompt.onForeground()
+    }
     // Kept after leaving Search, so going back shows its header colour at once.
     var searchTint by remember { mutableStateOf<Color?>(null) }
 
@@ -494,15 +503,20 @@ fun App(
                                         Screen.Home -> HomeScreen(
                                             state = navState,
                                             layout = settings.homeLayout,
+                                            moods = homeMoods,
                                             onLayoutChange = { layout ->
                                                 AppGraph.settingsStore.update { it.copy(homeLayout = layout) }
                                             },
                                             isLiked = ::isLiked,
                                             onSongClick = ::playSong,
+                                            onShuffleSongs = { songs -> viewModel.shufflePlay(songs) },
                                             onToggleLike = viewModel::toggleLike,
                                             onAlbumClick = { viewModel.navigateTo(Screen.AlbumDetail(it.id)) },
                                             onArtistClick = { viewModel.navigateTo(Screen.ArtistDetail(it.id)) },
                                             onPlaylistClick = { viewModel.navigateTo(Screen.PlaylistDetail(it.id)) },
+                                            onMood = { tile ->
+                                                viewModel.playMood(tile) { toastMessage = "Couldn't start ${tile.title} right now" }
+                                            },
                                             onLoadMoreHome = viewModel::loadMoreHome,
                                             onRetryHome = { viewModel.loadHome() },
                                             onRefreshHome = viewModel::refreshHome,
@@ -762,6 +776,13 @@ fun App(
                     DietCokeDialog(onDismiss = { showDietCoke = false })
                 }
 
+                // The popup that shows by itself waits behind every other dialog and the intro.
+                val otherPopupShowing = showDietCoke || showHymnIntro || newRelease != null ||
+                    sharePlaylist != null || uiState.youTubeSignInNeeded || uiState.browserNeeded
+                if (showSupportPrompt && !otherPopupShowing) {
+                    DietCokeDialog(onDismiss = supportPrompt::dismiss)
+                }
+
                 // Popups wait until the one-time "MusicSM is now Hymn" intro is gone.
                 newRelease?.takeIf { !showHymnIntro }?.let { release ->
                     val updates = AppGraph.updateNotifier
@@ -861,6 +882,8 @@ private fun tabOf(screen: Screen): Screen = when (screen) {
 }
 
 fun main() {
+    // First, before any window: how Windows' taskbar and media controls know Hymn.
+    WindowsAppIdentity.apply()
     // Before anything this launch writes: only an existing MusicSM user's folder holds files.
     val hadAppData = hasAppData(AppPaths.dataDir)
     AppGraph.init()
@@ -953,6 +976,7 @@ fun main() {
             LaunchedEffect(Unit) {
                 AppIcon.windowImages.takeIf { it.isNotEmpty() }?.let { window.iconImages = it }
             }
+            LaunchedEffect(Unit) { mediaKeys.attachWindow(window) }
             App(viewModel, lyricsController, motionArtController, windowVisible && !windowState.isMinimized, hymnIntro)
         }
     }
